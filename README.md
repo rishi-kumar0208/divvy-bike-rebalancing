@@ -238,21 +238,11 @@ The same coverage and conditional efficiency metrics from Stage 6 are recomputed
 
 ### Interactive dashboard
 
-An interactive station KPI dashboard is available at:
+An interactive station KPI dashboard is live at:
 
-```
-reports/figures/dashboard.html
-```
+[**→ View dashboard**](https://rishi-kumar0208.github.io/divvy-bike-rebalancing/reports/figures/dashboard.html)
 
-To open it: double-click the file in your file explorer, or run:
-
-```bash
-open reports/figures/dashboard.html     # macOS
-start reports/figures/dashboard.html    # Windows
-xdg-open reports/figures/dashboard.html # Linux
-```
-
-No server required. The file is fully self-contained. It shows:
+It shows:
 - **Left:** scatter plot of per-station cumulative coverage vs efficiency, with the 10 lowest-coverage stations highlighted in red
 - **Right:** daily trend lines for average cumulative coverage and efficiency
 - **Slider:** drag to filter both charts to any cutoff date between 2017-10-01 and 2017-11-30
