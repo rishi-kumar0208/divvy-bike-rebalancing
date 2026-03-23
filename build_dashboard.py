@@ -14,11 +14,10 @@ from plotly.subplots import make_subplots
 # ---------------------------------------------------------------------------
 df = pd.read_csv("reports/rebalancing_results.csv", parse_dates=["trip_date"])
 
-CUTOFF = pd.Timestamp("2017-11-30")
-df = df[df["trip_date"] <= CUTOFF].sort_values(["station_id", "trip_date"]).reset_index(drop=True)
+df = df.sort_values(["station_id", "trip_date"]).reset_index(drop=True)
 
 # Expanding coverage per station (skipna=False — covered_or is always 0/1)
-df["cum_coverage"] = (
+df["cumulative_coverage"] = (
     df.groupby("station_id")["covered_or"]
     .expanding()
     .mean()
@@ -26,22 +25,22 @@ df["cum_coverage"] = (
 )
 
 # Expanding efficiency per station (skipna=True by default — NaN rows are uncovered)
-df["cum_efficiency"] = (
+df["cumulative_efficiency"] = (
     df.groupby("station_id")["efficiency_or"]
     .expanding()
     .mean()
     .reset_index(level=0, drop=True)
 )
 
-station_kpi = df[["station_id", "trip_date", "cum_coverage", "cum_efficiency"]].copy()
+station_kpi = df[["station_id", "trip_date", "cumulative_coverage", "cumulative_efficiency"]].copy()
 station_kpi.to_csv("reports/postOR_station_kpi.csv", index=False)
 
 daily_trends = (
     station_kpi
     .groupby("trip_date")
     .agg(
-        avg_cum_coverage=("cum_coverage", "mean"),
-        avg_cum_efficiency=("cum_efficiency", "mean"),
+        avg_cumulative_coverage=("cumulative_coverage", "mean"),
+        avg_cumulative_efficiency=("cumulative_efficiency", "mean"),
     )
     .reset_index()
 )
@@ -59,8 +58,8 @@ date_strs = [pd.Timestamp(d).strftime("%Y-%m-%d") for d in dates]
 
 def get_frame_data(date):
     day = station_kpi[station_kpi["trip_date"] == date].copy()
-    day["cum_efficiency"] = day["cum_efficiency"].fillna(0.0)
-    bottom10_ids = set(day.nsmallest(10, "cum_coverage")["station_id"].tolist())
+    day["cumulative_efficiency"] = day["cumulative_efficiency"].fillna(0.0)
+    bottom10_ids = set(day.nsmallest(10, "cumulative_coverage")["station_id"].tolist())
     gray = day[~day["station_id"].isin(bottom10_ids)]
     red  = day[ day["station_id"].isin(bottom10_ids)]
     line = daily_trends[daily_trends["trip_date"] <= date]
@@ -86,8 +85,8 @@ subplot_annotations = list(fig.layout.annotations)
 
 # Trace 0 — gray stations
 fig.add_trace(go.Scatter(
-    x=gray0["cum_efficiency"].tolist(),
-    y=gray0["cum_coverage"].tolist(),
+    x=gray0["cumulative_efficiency"].tolist(),
+    y=gray0["cumulative_coverage"].tolist(),
     mode="markers",
     marker=dict(color="#888888", size=7, opacity=0.65),
     name="Stations",
@@ -97,8 +96,8 @@ fig.add_trace(go.Scatter(
 
 # Trace 1 — bottom-10 red stations
 fig.add_trace(go.Scatter(
-    x=red0["cum_efficiency"].tolist(),
-    y=red0["cum_coverage"].tolist(),
+    x=red0["cumulative_efficiency"].tolist(),
+    y=red0["cumulative_coverage"].tolist(),
     mode="markers+text",
     marker=dict(color="#FF4444", size=9),
     text=red0["station_id"].astype(str).tolist(),
@@ -111,7 +110,7 @@ fig.add_trace(go.Scatter(
 # Trace 2 — coverage line
 fig.add_trace(go.Scatter(
     x=line0["trip_date"].tolist(),
-    y=line0["avg_cum_coverage"].tolist(),
+    y=line0["avg_cumulative_coverage"].tolist(),
     mode="lines",
     line=dict(color="#4488FF", width=2.5),
     name="Avg. Cumulative Coverage",
@@ -120,7 +119,7 @@ fig.add_trace(go.Scatter(
 # Trace 3 — efficiency line
 fig.add_trace(go.Scatter(
     x=line0["trip_date"].tolist(),
-    y=line0["avg_cum_efficiency"].tolist(),
+    y=line0["avg_cumulative_efficiency"].tolist(),
     mode="lines",
     line=dict(color="#FF8800", width=2.5),
     name="Avg. Cumulative Efficiency",
@@ -146,22 +145,22 @@ for date in dates:
     frames.append(go.Frame(
         data=[
             go.Scatter(
-                x=gray["cum_efficiency"].tolist(),
-                y=gray["cum_coverage"].tolist(),
+                x=gray["cumulative_efficiency"].tolist(),
+                y=gray["cumulative_coverage"].tolist(),
                 text=gray["station_id"].astype(str).tolist(),
             ),
             go.Scatter(
-                x=red["cum_efficiency"].tolist(),
-                y=red["cum_coverage"].tolist(),
+                x=red["cumulative_efficiency"].tolist(),
+                y=red["cumulative_coverage"].tolist(),
                 text=red["station_id"].astype(str).tolist(),
             ),
             go.Scatter(
                 x=line["trip_date"].tolist(),
-                y=line["avg_cum_coverage"].tolist(),
+                y=line["avg_cumulative_coverage"].tolist(),
             ),
             go.Scatter(
                 x=line["trip_date"].tolist(),
-                y=line["avg_cum_efficiency"].tolist(),
+                y=line["avg_cumulative_efficiency"].tolist(),
             ),
         ],
         layout=go.Layout(annotations=subplot_annotations + [date_annotation(ds)]),
