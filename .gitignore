@@ -1,0 +1,11 @@
+data/raw/
+*.parquet
+reports/*.csv
+reports/pipeline_codeboard.html
+.ipynb_checkpoints/
+__pycache__/
+*.pyc
+.env
+.DS_Store
+reports/explainers/
+.venv/

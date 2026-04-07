@@ -1,0 +1,9 @@
+duckdb
+pandas
+numpy
+lightgbm
+scikit-learn
+networkx
+matplotlib
+jupyter
+plotly
