@@ -5,15 +5,15 @@ import sys
 sys.path.insert(0, '.')
 
 import pandas as pd
-from llm_src.utils import connect_duckdb
-from llm_src.features import (
+from src.utils import connect_duckdb
+from src.features import (
     build_station_day_calendar,
     compute_inventory_bounds,
     add_lag_features,
     add_rolling_features,
 )
-from llm_src.models import train_lgbm, evaluate_coverage, coverage_summary
-from llm_src.rebalancing import run_rebalancing_pipeline
+from src.models import train_lgbm, evaluate_coverage, coverage_summary
+from src.rebalancing import run_rebalancing_pipeline
 
 DATA_PATH = "data/raw/divvy.parquet"
 
@@ -45,7 +45,7 @@ df = compute_inventory_bounds(df)
 print(f"         Inversions repaired: {(df['max_start_inventory'] < df['min_start_inventory']).sum()}")
 
 print("Step 3/5  Adding rolling features (on raw columns)...")
-df = add_rolling_features(df)
+df = add_rolling_features(df, train_end_date='2017-09-30')
 
 print("Step 4/5  Adding lag features and splitting train/test...")
 df = add_lag_features(df)

@@ -139,22 +139,37 @@ def build_station_day_calendar(con) -> pd.DataFrame:
 
     # --- Weather: average temperature, mode of events (both departure and arrival sides) ---
     weather_df = con.execute("""
-        SELECT COALESCE(from_station_id, to_station_id)    AS station_id,
-               COALESCE(starttime::DATE, stoptime::DATE)   AS trip_date,
-               AVG(temperature)                            AS temperature,
-               MODE() WITHIN GROUP (ORDER BY events)       AS events
-        FROM trips
+        WITH all_weather AS (
+            SELECT from_station_id AS station_id, starttime::DATE AS trip_date,
+                   temperature, events
+            FROM trips
+            UNION ALL
+            SELECT to_station_id, stoptime::DATE, temperature, events
+            FROM trips
+        )
+        SELECT station_id, trip_date,
+               AVG(temperature)                      AS temperature,
+               MODE() WITHIN GROUP (ORDER BY events) AS events
+        FROM all_weather
         GROUP BY 1, 2
     """).df()
     weather_df['trip_date'] = pd.to_datetime(weather_df['trip_date'])
 
     # --- Coordinates: average lat/lon per station from both sides ---
     coords_df = con.execute("""
-        SELECT COALESCE(from_station_id, to_station_id)          AS station_id,
-               AVG(COALESCE(latitude_start,  latitude_end))      AS latitude_start,
-               AVG(COALESCE(longitude_start, longitude_end))     AS longitude_start
-        FROM trips
-        WHERE COALESCE(latitude_start, latitude_end) IS NOT NULL
+        WITH all_coords AS (
+            SELECT from_station_id AS station_id,
+                   latitude_start  AS latitude,
+                   longitude_start AS longitude
+            FROM trips
+            UNION ALL
+            SELECT to_station_id, latitude_end, longitude_end
+            FROM trips
+        )
+        SELECT station_id,
+               AVG(latitude)  AS latitude_start,
+               AVG(longitude) AS longitude_start
+        FROM all_coords
         GROUP BY 1
     """).df()
 
@@ -264,7 +279,7 @@ def add_lag_features(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def add_rolling_features(df: pd.DataFrame) -> pd.DataFrame:
+def add_rolling_features(df: pd.DataFrame, train_end_date) -> pd.DataFrame:
     """
     Compute 7-day rolling averages for activity and inventory columns.
 
@@ -275,7 +290,7 @@ def add_rolling_features(df: pd.DataFrame) -> pd.DataFrame:
       1. Station-level 7-day rolling mean (primary).
       2. City-wide 7-day rolling mean by date (fallback — all stations are in
          Chicago so city-wide averages are geographically meaningful proxies).
-      3. Global dataset mean (last resort).
+      3. Global mean computed on training rows only to avoid leakage (last resort).
 
     trips_departed_roll7 and trips_arrived_roll7 are filled with 0 (no activity
     in the past 7 days means zero is the correct value).
@@ -285,6 +300,9 @@ def add_rolling_features(df: pd.DataFrame) -> pd.DataFrame:
     df : pandas.DataFrame
         Calendar DataFrame sorted by (station_id, trip_date). Must contain
         min_start_inventory and max_start_inventory columns.
+    train_end_date : str or datetime-like
+        Last date of the training set. The tier 3 global mean is computed only
+        on rows up to and including this date to avoid leakage from test rows.
 
     Returns
     -------
@@ -316,13 +334,14 @@ def add_rolling_features(df: pd.DataFrame) -> pd.DataFrame:
 
     # 3-tier fallback for temperature and inventory rolling features
     for src_col, dst_col in tiered.items():
-        # Tier 2: city-wide 7-day rolling mean by date
-        city_daily = df.groupby('trip_date')[src_col].mean().sort_index()
+        # Tier 2: city-wide 7-day rolling mean by date - training rows only to avoid leakage
+        train_rows = df[df['trip_date'] <= train_end_date]
+        city_daily = train_rows.groupby('trip_date')[src_col].mean().sort_index()
         city_roll7 = city_daily.rolling(7, min_periods=1).mean()
         city_roll7_mapped = df['trip_date'].map(city_roll7)
 
-        # Tier 3: global dataset mean
-        global_mean = df[src_col].mean()
+        # Tier 3: global mean on training rows only to avoid leakage
+        global_mean = df.loc[df['trip_date'] <= train_end_date, src_col].mean()
 
         df[dst_col] = df[dst_col].fillna(city_roll7_mapped)
         df[dst_col] = df[dst_col].fillna(global_mean)
