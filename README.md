@@ -260,5 +260,14 @@ python build_dashboard.py
 1. Clone the repo
 2. Install dependencies: `pip install -r requirements.txt`
 3. Place `divvy.parquet` in `data/raw/`
-4. Run notebooks in order: `01_eda.ipynb` -> `02_feature_engineering.ipynb` -> `03_modeling.ipynb` -> `04_rebalancing_optimization.ipynb`
-5. Each notebook will prompt you for the path to the parquet file at runtime. Press Enter to use the default `data/raw/divvy.parquet` or type a custom path.
+
+**Option A - Full pipeline (single command):**
+```bash
+python run_pipeline.py
+```
+Runs all stages end-to-end and saves results to `reports/`.
+
+**Option B - Notebooks (interactive):**
+Run notebooks in order: `01_eda.ipynb` → `02_feature_engineering.ipynb` → `03_modeling.ipynb` → `04_rebalancing_optimization.ipynb`
+
+Each notebook will prompt you for the path to the parquet file at runtime. Press Enter to use the default `data/raw/divvy.parquet` or type a custom path.
