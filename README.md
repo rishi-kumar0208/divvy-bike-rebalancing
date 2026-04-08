@@ -140,7 +140,7 @@ Weather is only recorded on days where trips happened. On zero-trip days these a
 For `temperature_roll7`, `min_start_inventory_roll7`, and `max_start_inventory_roll7`, if still NaN after the primary rolling calculation:
 1. **Station-level 7-day rolling mean** (primary). Uses only that station's own recent history.
 2. **City-wide 7-day rolling mean by date** (fallback if station-level is NaN). Uses the average across all stations for that same date as a proxy for what a typical station looked like that week.
-3. **Global dataset mean** (last resort if both above are still NaN). This is more reasonable than it might sound; all stations are within the same city, so temperatures across the dataset are geographically close enough that a global mean is a genuinely informative fallback.
+3. **Global mean on training rows only** (last resort if both above are still NaN). Restricted to training data to avoid leakage from test rows. All stations are within the same city, so temperatures across the training set are geographically close enough that this mean is a genuinely informative fallback.
 
 **`trips_departed_roll7` and `trips_arrived_roll7` - fill with 0:**
 A station with no trips in the past 7 days has a rolling average of 0. Zero activity is the correct value, not missing data.
@@ -232,8 +232,8 @@ The same coverage and conditional efficiency metrics from Stage 6 are recomputed
 
 | Metric | Pre-rebalancing (LightGBM) | Post-rebalancing (min-cost flow) |
 |--------|---------------------------|----------------------------------|
-| Coverage rate | 94.02% | 93.92% |
-| Mean conditional efficiency | 90.84% | 90.15% |
+| Coverage rate | 93.99% | 93.94% |
+| Mean conditional efficiency | 90.84% | 90.16% |
 | RMSE | 2.015 bikes | N/A |
 
 ### Interactive dashboard
