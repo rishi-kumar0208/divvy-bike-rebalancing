@@ -232,9 +232,9 @@ The same coverage and conditional efficiency metrics from Stage 6 are recomputed
 
 | Metric | Pre-rebalancing (LightGBM) | Post-rebalancing (min-cost flow) |
 |--------|---------------------------|----------------------------------|
-| Coverage rate | 93.99% | 93.94% |
-| Mean conditional efficiency | 90.84% | 90.16% |
-| RMSE | 2.015 bikes | N/A |
+| Coverage rate | 93.21% | 93.16% |
+| Mean conditional efficiency | 90.29% | 89.77% |
+| RMSE | 2.225 bikes | N/A |
 
 ### Interactive dashboard
 

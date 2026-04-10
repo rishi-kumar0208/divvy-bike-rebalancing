@@ -283,8 +283,9 @@ def add_rolling_features(df: pd.DataFrame, train_end_date) -> pd.DataFrame:
     """
     Compute 7-day rolling averages for activity and inventory columns.
 
-    Rolling features are computed on the raw (unshifted) columns — do not apply
-    a shift before computing rolling features.
+    Rolling features are computed on the raw columns and shifted by 1 day so that
+    day t's roll7 value reflects days t-7 through t-1 only, avoiding leakage from
+    the current day's inventory into the prediction target.
 
     Missing values use a 3-tier fallback:
       1. Station-level 7-day rolling mean (primary).
@@ -329,7 +330,7 @@ def add_rolling_features(df: pd.DataFrame, train_end_date) -> pd.DataFrame:
     for src_col, dst_col in roll_cols.items():
         df[dst_col] = (
             df.groupby('station_id')[src_col]
-            .transform(lambda s: s.rolling(7, min_periods=1).mean())
+            .transform(lambda s: s.rolling(7, min_periods=1).mean().shift(1))
         )
 
     # 3-tier fallback for temperature and inventory rolling features
