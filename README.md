@@ -44,6 +44,8 @@ The raw data is the Divvy trip history dataset stored as `divvy.parquet`. Each r
 | `latitude_start`, `longitude_start` | Coordinates of the departure station |
 | `latitude_end`, `longitude_end` | Coordinates of the arrival station |
 
+The dataset covers trips from **January 2014 through January 2018**. Source: [Chicago Divvy Bicycle Sharing Data](https://www.kaggle.com/datasets/yingwurenjian/chicago-divvy-bicycle-sharing-data), which combines Divvy trip history with weather data including temperature and event conditions.
+
 ---
 
 ## Pipeline
