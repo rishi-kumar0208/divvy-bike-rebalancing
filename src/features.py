@@ -70,8 +70,8 @@ def build_station_day_calendar(con) -> pd.DataFrame:
     calendar['trip_date'] = pd.to_datetime(calendar['trip_date'])
 
     # --- Cumulative net flow using FULL OUTER JOIN on hourly buckets ---
-    cum_stats = con.execute("""
-        WITH lf_hourly AS (
+    cumulative_stats = con.execute("""
+        WITH hourly_net_flow AS (
             SELECT COALESCE(d.station_id, a.station_id)                     AS station_id,
                    COALESCE(d.trip_date,  a.trip_date)                      AS trip_date,
                    COALESCE(d.hour, a.hour)                                 AS hour,
@@ -95,24 +95,24 @@ def build_station_day_calendar(con) -> pd.DataFrame:
               AND d.trip_date   = a.trip_date
               AND d.hour        = a.hour
         ),
-        lf_cum AS (
+        cumulative_net_flow AS (
             SELECT station_id, trip_date, trips_departed, trips_arrived,
                    SUM(hourly_net_flow) OVER (
                        PARTITION BY station_id, trip_date
                        ORDER BY hour
                        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
                    ) AS cumulative_net_flow
-            FROM lf_hourly
+            FROM hourly_net_flow
         )
         SELECT station_id, trip_date,
                MIN(cumulative_net_flow) AS min_cumulative_flow,
                MAX(cumulative_net_flow) AS max_cumulative_flow,
                SUM(trips_departed)      AS trips_departed,
                SUM(trips_arrived)       AS trips_arrived
-        FROM lf_cum
+        FROM cumulative_net_flow
         GROUP BY 1, 2
     """).df()
-    cum_stats['trip_date'] = pd.to_datetime(cum_stats['trip_date'])
+    cumulative_stats['trip_date'] = pd.to_datetime(cumulative_stats['trip_date'])
 
     # --- Capacity: GREATEST(cap_start, cap_end) via FULL OUTER JOIN ---
     cap_df = con.execute("""
@@ -176,7 +176,7 @@ def build_station_day_calendar(con) -> pd.DataFrame:
     # --- Join everything onto the calendar ---
     calendar = (
         calendar
-        .merge(cum_stats,  on=['station_id', 'trip_date'], how='left')
+        .merge(cumulative_stats,  on=['station_id', 'trip_date'], how='left')
         .merge(cap_df,     on=['station_id', 'trip_date'], how='left')
         .merge(weather_df, on=['station_id', 'trip_date'], how='left')
         .merge(coords_df,  on='station_id',                how='left')
