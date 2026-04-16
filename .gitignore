@@ -1,6 +1,7 @@
 data/raw/
 *.parquet
 reports/*.csv
+reports/figures/*.png
 reports/pipeline_codeboard.html
 .ipynb_checkpoints/
 __pycache__/
